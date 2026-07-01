@@ -1,0 +1,76 @@
+# ---------------------------------------------------------------------------
+# Default configuration for rare-words-summarization.
+#
+# Every hyperparameter used anywhere in the pipeline lives here and is loaded
+# exactly once (see src/rare_words_summ/config.py). The notebooks hard-coded
+# these values; they are centralised here so a single file controls a run.
+#
+# The single most important flag is `model.use_pointer`. It selects between the
+# two notebooks that this repo unifies:
+#   use_pointer: true   -> Transformer + pointer-generator copy mechanism
+#   use_pointer: false  -> plain abstractive Transformer (no copy mechanism)
+# It also selects the checkpoint name (best_model_pg.pt vs best_model_nopg.pt).
+# ---------------------------------------------------------------------------
+
+seed: 42
+
+data:
+  dataset_name: abisee/cnn_dailymail
+  dataset_config: "3.0.0"
+  # Column names after renaming (article -> Text, highlights -> Summary).
+  text_column: Text
+  summary_column: Summary
+  # Use the entire CNN/DailyMail training split (~287k rows). Set to an integer
+  # to subsample (e.g. for a quick run on a single GPU).
+  subsample_size: null
+  # Two-stage split: first carve off `test_size` as a temp pool, then halve the
+  # pool into validation and test. With 0.2 this yields an 80/10/10 split.
+  temp_size: 0.2
+  val_test_ratio: 0.5
+  # Directory where prepared CSVs and the vocabulary are written / read.
+  processed_dir: data/processed
+
+extractive:
+  # Token budget for the extractive stage (paper experimented with 200 and 400;
+  # the notebooks use 400). Sentences are greedily selected up to this budget
+  # and emitted in original document order.
+  token_budget: 400
+  # N for the n-gram rarity statistics. The paper selected 3-grams.
+  ngram_n: 3
+  # N-grams occurring this many times or fewer are dropped before scoring
+  # (log(1) == 0 is undefined for the inverse-log score; see paper Eq. 3).
+  min_ngram_count: 1
+
+vocab:
+  # Maximum vocabulary size including the 4 special tokens.
+  max_vocab: 15000
+
+model:
+  use_pointer: true        # <-- the ablation flag (pointer ON / OFF)
+  d_model: 256
+  n_layers: 8
+  n_heads: 8
+  d_ff: 1024
+  dropout: 0.1
+  max_src: 512             # encoder positions (>= extractive token_budget)
+  max_tgt: 150             # decoder positions
+
+training:
+  batch_size: 8
+  epochs: 30
+  lr: 0.0001
+  warmup_steps: 500
+  grad_clip: 1.0
+  patience: 3              # early-stopping patience on validation loss
+  num_workers: 4
+  # Directory for checkpoints. File name is derived from use_pointer.
+  checkpoint_dir: checkpoints
+
+inference:
+  beam_size: 4
+  length_alpha: 0.7        # beam-search length-penalty exponent
+
+eval:
+  # ROUGE variants reported by the protocol.
+  rouge_types: [rouge1, rouge2, rougeL]
+  use_stemmer: true

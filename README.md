@@ -81,6 +81,16 @@ A few things differ from the paper: it uses the Adam optimizer, an NLL loss,
 and a single 400-token input size. Training is from scratch with no pre-trained
 model, so results will be lower than large pre-trained models.
 
+## Reference
+
+This project follows the approach from the paper below and applies a similar
+extractive + rare-word attention + pointer-generator method.
+
+- Paper: "Rare words in text summarization"
+- Authors: Danila Morozovskii, Sheela Ramanna
+- Journal: Natural Language Processing Journal, Vol. 3, 2023
+- Link: https://www.sciencedirect.com/science/article/pii/S2949719123000110
+
 ## License
 
 MIT.
